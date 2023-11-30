@@ -14,8 +14,13 @@ class UserController extends Controller {
      *
      * @return \Illuminate\Http\Response
      */
-    public function index() {
-        return User::all();
+    public function index(Request $request) {
+        $displayRoles = $request->input('roles', false);
+        if($displayRoles){
+            return response(User::with('roles')->get(),200);
+        }
+        //return all users with roles
+        return response(User::all(),200);
     }
 
     /**
@@ -45,7 +50,7 @@ class UserController extends Controller {
         $defaultRoleSlug = config('hydra.default_user_role_slug', 'user');
         $user->roles()->attach(Role::where('slug', $defaultRoleSlug)->first());
 
-        return $user;
+        return response($user, 201);
     }
 
     /**
@@ -61,7 +66,7 @@ class UserController extends Controller {
         ]);
 
         $user = User::where('email', $creds['email'])->first();
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+        if (!$user || !Hash::check($request->password, $user->password)) {
             return response(['error' => 1, 'message' => 'invalid credentials'], 401);
         }
 
@@ -73,7 +78,7 @@ class UserController extends Controller {
 
         $plainTextToken = $user->createToken('hydra-api-token', $roles)->plainTextToken;
 
-        return response(['error' => 0, 'id' => $user->id, 'token' => $plainTextToken], 200);
+        return response(['error' => 0, 'id' => $user->id, 'name'=>$user->name, 'roles' => $roles, 'token' => $plainTextToken], 200);
     }
 
     /**
